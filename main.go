@@ -14,6 +14,8 @@ import (
  */
 type Todo struct {
 	ID      uint   `json:"id"`
+	App     uint   `json:"app"`
+	Cate    uint   `json:"cate"`
 	Done    bool   `json:"done"`
 	Content string `json:"content"`
 }
@@ -39,6 +41,8 @@ func main() {
 	r.POST("/todo/update", updateTodo)
 	r.GET("/todo/:id", getTodo)
 	r.GET("/todos", getAllTodos)
+	r.GET("/todos/:app", getAllTodosByApp)
+	r.GET("/todos/:app/:cate", getAllTodosByApp)
 	r.DELETE("/todo/:id", delTodo)
 	r.Run(":8888")
 }
@@ -97,6 +101,25 @@ func getAllTodos(c *gin.Context) {
 	c.Header("Content-Type", "application/json")
 	var todos []Todo
 	if err := db.Find(&todos).Error; err != nil {
+		c.AbortWithStatus(404)
+		fmt.Println(err)
+	} else {
+		c.JSON(200, todos)
+	}
+}
+
+func getAllTodosByApp(c *gin.Context) {
+	c.Header("Content-Type", "application/json")
+	app := c.Params.ByName("app")
+	cate := c.Params.ByName("cate")
+	var todos []Todo
+	var tmp *gorm.DB
+	if cate == "" {
+		tmp = db.Where("app = ?", app)
+	} else {
+		tmp = db.Where("app = ? AND cate = ?", app, cate)
+	}
+	if err := tmp.Find(&todos).Error; err != nil {
 		c.AbortWithStatus(404)
 		fmt.Println(err)
 	} else {
